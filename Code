@@ -1,0 +1,64 @@
+#define MAX_WORDS 5000
+#define MAX_WORD_LEN 30
+
+// Simple struct for a word-count pair
+typedef struct {
+    char word[MAX_WORD_LEN + 1];
+    int count;
+} WordCount;
+
+// Find index of word in array, -1 if not found
+int findWord(WordCount* arr, int size, const char* word) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(arr[i].word, word) == 0) return i;
+    }
+    return -1;
+}
+
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    if (wordsSize == 0) return NULL;
+
+    int wordLen = strlen(words[0]);
+    int totalLen = wordLen * wordsSize;
+    int strLen = strlen(s);
+    if (strLen < totalLen) return NULL;
+
+    // Build word count map
+    WordCount wordCount[MAX_WORDS];
+    int wcSize = 0;
+    for (int i = 0; i < wordsSize; i++) {
+        int idx = findWord(wordCount, wcSize, words[i]);
+        if (idx == -1) {
+            strcpy(wordCount[wcSize].word, words[i]);
+            wordCount[wcSize].count = 1;
+            wcSize++;
+        } else {
+            wordCount[idx].count++;
+        }
+    }
+
+    int* result = (int*)malloc(sizeof(int) * (strLen - totalLen + 1));
+
+    // Slide window
+    for (int i = 0; i <= strLen - totalLen; i++) {
+        WordCount seen[MAX_WORDS] = {0};
+        int j;
+        for (j = 0; j < wordsSize; j++) {
+            char word[MAX_WORD_LEN + 1];
+            strncpy(word, s + i + j * wordLen, wordLen);
+            word[wordLen] = '\0';
+            int idx = findWord(wordCount, wcSize, word);
+            if (idx == -1) break; // word not in original list
+            seen[idx].count++;
+            strcpy(seen[idx].word, word);
+            if (seen[idx].count > wordCount[idx].count) break; // too many occurrences
+        }
+        if (j == wordsSize) {
+            result[*returnSize] = i;
+            (*returnSize)++;
+        }
+    }
+
+    return result;
+}
